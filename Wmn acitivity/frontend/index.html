@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5G WMN MCP Slicing Dashboard</title>
+    <!-- Google Fonts for Modern Telecom Aesthetics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js for beautiful real-time rendering -->
+    <script src="chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="app-container">
+        <!-- HEADER MODULE -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="pulse-indicator"></span>
+                <h1>5G WMN <span class="neon-text">MCP SLICING</span></h1>
+            </div>
+            <div class="header-status">
+                <div class="status-badge" id="ws-status">
+                    <span class="status-dot disconnected"></span>
+                    <span class="status-text">WS DISCONNECTED</span>
+                </div>
+                <div class="metric-badge">
+                    <span class="label">SIM TICK:</span>
+                    <span class="value" id="sim-tick">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT GRID -->
+        <div class="main-grid">
+            
+            <!-- LEFT PANEL: INTERACTIVE CANVAS TOPOLOGY -->
+            <section class="panel canvas-panel">
+                <div class="panel-header">
+                    <h2>Live 5G Mesh Topology</h2>
+                    <div class="controls">
+                        <span class="info-tooltip" title="Click a router node to simulate physical power failure and trigger routing self-healing.">ℹ️ Click Node to Fail/Heal</span>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="topology-canvas" width="800" height="520"></canvas>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: SLICE MATRICES & CONTROL PANEL -->
+            <section class="panel-column">
+                
+                <!-- GLOBAL CONTROL CENTER -->
+                <div class="panel control-panel">
+                    <div class="panel-header">
+                        <h2>Network Orchestration Center</h2>
+                    </div>
+                    <div class="control-grid">
+                        <div class="control-group">
+                            <label for="routing-policy-select">Mesh Routing Policy</label>
+                            <select id="routing-policy-select" class="styled-select">
+                                <option value="shortest_hop">Shortest Hop Count</option>
+                                <option value="snr_based">Radio Signal-Quality (SNR)</option>
+                                <option value="load_balanced">Congestion Load Balanced</option>
+                            </select>
+                        </div>
+                        <div class="control-group switch-group">
+                            <label>Inject eMBB Traffic Congestion</label>
+                            <label class="switch">
+                                <input type="checkbox" id="congestion-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5G NETWORK SLICES MATRICES -->
+                <div class="panel slices-panel">
+                    <div class="panel-header">
+                        <h2>Active 5G Slice Telemetry Matrix</h2>
+                    </div>
+                    <div class="slices-grid">
+                        <!-- eMBB Slice -->
+                        <div class="slice-card embb" id="card-embb">
+                            <div class="slice-card-header">
+                                <h3>eMBB Slice (Video/AR)</h3>
+                                <span class="slice-badge active" id="badge-embb">ACTIVE</span>
+                            </div>
+                            <div class="slice-metrics">
+                                <div class="metric">
+                                    <span class="label">Throughput</span>
+                                    <span class="value" id="val-embb-throughput">0.00 <small>Mbps</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">Latency</span>
+                                    <span class="value" id="val-embb-latency">0.0 <small>ms</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">PDR (SLA)</span>
+                                    <span class="value" id="val-embb-pdr">100.0 <small>%</small></span>
+                                </div>
+                            </div>
+                            <button class="btn btn-card" onclick="openConfigModal('eMBB')">Tune QoS</button>
+                        </div>
+
+                        <!-- URLLC Slice -->
+                        <div class="slice-card urllc" id="card-urllc">
+                            <div class="slice-card-header">
+                                <h3>URLLC Slice (Critical/Auto)</h3>
+                                <span class="slice-badge active" id="badge-urllc">ACTIVE</span>
+                            </div>
+                            <div class="slice-metrics">
+                                <div class="metric">
+                                    <span class="label">Throughput</span>
+                                    <span class="value" id="val-urllc-throughput">0.00 <small>Mbps</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">Latency</span>
+                                    <span class="value" id="val-urllc-latency">0.0 <small>ms</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">PDR (SLA)</span>
+                                    <span class="value" id="val-urllc-pdr">100.0 <small>%</small></span>
+                                </div>
+                            </div>
+                            <button class="btn btn-card" onclick="openConfigModal('URLLC')">Tune QoS</button>
+                        </div>
+
+                        <!-- mMTC Slice -->
+                        <div class="slice-card mmtc" id="card-mmtc">
+                            <div class="slice-card-header">
+                                <h3>mMTC Slice (Massive IoT)</h3>
+                                <span class="slice-badge active" id="badge-mmtc">ACTIVE</span>
+                            </div>
+                            <div class="slice-metrics">
+                                <div class="metric">
+                                    <span class="label">Throughput</span>
+                                    <span class="value" id="val-mmtc-throughput">0.00 <small>Mbps</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">Latency</span>
+                                    <span class="value" id="val-mmtc-latency">0.0 <small>ms</small></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">PDR (SLA)</span>
+                                    <span class="value" id="val-mmtc-pdr">100.0 <small>%</small></span>
+                                </div>
+                            </div>
+                            <button class="btn btn-card" onclick="openConfigModal('mMTC')">Tune QoS</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- LOWER SECTION: LIVE CHARTS & MCP INTERACTIVE AGENT terminal -->
+        <div class="bottom-grid">
+            <!-- REAL-TIME CHARTS -->
+            <section class="panel chart-panel">
+                <div class="panel-header">
+                    <h2>Live 5G SLA Performance Graphs</h2>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <canvas id="throughput-chart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="latency-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- INTERACTIVE MCP AI PLAYGROUND -->
+            <section class="panel mcp-panel">
+                <div class="panel-header">
+                    <h2>Model Context Protocol (MCP) AI Controller Console</h2>
+                    <div class="mcp-actions">
+                        <button class="btn btn-mcp-agent" id="btn-agent-congest">Run Congestion Optimizer Agent</button>
+                        <button class="btn btn-mcp-agent" id="btn-agent-healing">Run WMN Self-Healing Agent</button>
+                    </div>
+                </div>
+                <div class="mcp-console-wrapper">
+                    <div class="mcp-terminal" id="mcp-terminal">
+                        <div class="terminal-line system">=== 5G WMN MCP Control Interface Active ===</div>
+                        <div class="terminal-line system">Connected to MCP Server: 5g-wmn-mcp-slicing-manager (v1.0.0)</div>
+                        <div class="terminal-line system">Subscribed resources: network://topology, network://metrics</div>
+                        <div class="terminal-line system">Available tools: list_slices, modify_slice_qos, get_network_health, route_optimize, toggle_node_status, trigger_congestion_leak</div>
+                        <div class="terminal-line info">Waiting for AI Agent activation or custom query...</div>
+                    </div>
+                    <div class="mcp-input-bar">
+                        <span class="prompt-arrow">&gt;_</span>
+                        <input type="text" id="mcp-user-input" placeholder="Type natural language command (e.g., 'Heal the network' or 'Optimize eMBB slice bandwidth')">
+                        <button class="btn btn-send" id="btn-mcp-send">Execute</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- MODAL FOR DYNAMIC QOS UPDATES -->
+        <div class="modal-overlay" id="qos-modal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 id="modal-slice-title">Tune Slice QoS Parameters</h3>
+                    <button class="btn-close" onclick="closeConfigModal()">&times;</button>
+                </div>
+                <form id="qos-form">
+                    <input type="hidden" id="modal-slice-type">
+                    <div class="form-group">
+                        <label for="modal-bandwidth">Guaranteed Bandwidth (Mbps)</label>
+                        <input type="number" id="modal-bandwidth" min="1" max="300" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-latency">Latency Target SLA Budget (ms)</label>
+                        <input type="number" id="modal-latency" min="1" max="500" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-priority">Queue Scheduler Priority</label>
+                        <select id="modal-priority">
+                            <option value="1">1 - Strict Priority Bypass Queue (URLLC)</option>
+                            <option value="2">2 - Weighted Fair Share Allocation (eMBB)</option>
+                            <option value="3">3 - Best Effort Transmission Queue (mMTC)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-status">Slice Operational Status</label>
+                        <select id="modal-status">
+                            <option value="active">Active (Forwarding Traffic)</option>
+                            <option value="inactive">Inactive (Drop Sliced Packets)</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Apply QoS Profiles</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
